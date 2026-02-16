@@ -1,47 +1,58 @@
-WITH pages AS (
+#standardSQL
+# Invalid Head Elements
+
+WITH invalid_elements AS (
   SELECT
     client,
-    CASE
-      WHEN is_root_page = FALSE THEN 'Secondarypage'
-      WHEN is_root_page = TRUE THEN 'Homepage'
-      ELSE 'No Assigned Page'
-    END AS is_root_page,
+    is_root_page,
     page,
-    payload
+    JSON_VALUE(el) AS element
   FROM
-    `httparchive.crawl.pages`
+    `httparchive.crawl.pages`,
+    UNNEST(IFNULL(JSON_EXTRACT_ARRAY(custom_metrics.other.`valid-head`.invalidElements), [])) AS el
   WHERE
-    date = '2025-06-01'
+    date = '2025-07-01'
 ),
 
 total_sites AS (
-  -- total number of distinct pages (URLs) per client and page type
   SELECT
     client,
     is_root_page,
     COUNT(DISTINCT page) AS total_sites
   FROM
-    pages
+    `httparchive.crawl.pages`
+  WHERE
+    date = '2025-07-01'
   GROUP BY
     client,
     is_root_page
 )
 
 SELECT
-  p.client,
-  p.is_root_page,
-  element,
-  COUNT(DISTINCT p.page) AS invalid_sites, -- Count of distinct pages with invalid elements
-  ts.total_sites
-FROM
-  pages p
-JOIN
-  total_sites ts ON p.client = ts.client AND p.is_root_page = ts.is_root_page,
-  UNNEST(JSON_EXTRACT_ARRAY(p.payload, '$._valid-head.invalidElements')) AS element
-GROUP BY
-  p.client,
-  p.is_root_page,
+  ie.client,
+  CASE
+    WHEN ie.is_root_page = FALSE THEN 'Secondarypage'
+    WHEN ie.is_root_page = TRUE THEN 'Homepage'
+    ELSE 'No Assigned Page'
+  END AS is_root_page,
+  ie.element,
+  COUNT(DISTINCT ie.page) AS invalid_sites,
   ts.total_sites,
-  element
+  SAFE_DIVIDE(COUNT(DISTINCT ie.page), ts.total_sites) AS pct_invalid
+FROM
+  invalid_elements ie
+JOIN
+  total_sites ts
+ON
+  ie.client = ts.client AND
+  ie.is_root_page = ts.is_root_page
+GROUP BY
+  ie.client,
+  is_root_page,
+  ts.total_sites,
+  ie.element
 ORDER BY
-  p.client;
+  ie.client,
+  is_root_page,
+  ts.total_sites,
+  ie.element

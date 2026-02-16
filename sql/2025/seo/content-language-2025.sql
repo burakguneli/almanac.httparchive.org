@@ -1,9 +1,11 @@
-CREATE TEMPORARY FUNCTION getContentLanguagesAlmanac(almanac_string STRING)
+#standardSQL
+# Content Language
+
+CREATE TEMPORARY FUNCTION getContentLanguagesAlmanac(almanac JSON)
 RETURNS ARRAY<STRING>
 LANGUAGE js AS '''
 var result = [];
 try {
-    var almanac = JSON.parse(almanac_string);
 
     if (Array.isArray(almanac) || typeof almanac != 'object') return ["NO PAYLOAD"];
 
@@ -27,11 +29,11 @@ WITH content_language_usage AS (
       WHEN is_root_page = TRUE THEN 'Homepage'
       ELSE 'No Assigned Page'
     END AS is_root_page,
-    getContentLanguagesAlmanac(JSON_EXTRACT_SCALAR(payload, '$._almanac')) AS content_languages
+    getContentLanguagesAlmanac(custom_metrics.other.almanac) AS content_languages
   FROM
     `httparchive.crawl.pages`
   WHERE
-    date = '2025-06-01'
+    date = '2025-07-01'
 )
 
 SELECT

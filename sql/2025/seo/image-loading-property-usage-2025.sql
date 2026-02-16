@@ -1,5 +1,5 @@
 # Create a temporary function to extract the loading properties from the markup
-CREATE TEMPORARY FUNCTION getLoadingPropertyMarkupInfo(markup_string STRING)
+CREATE TEMPORARY FUNCTION getLoadingPropertyMarkupInfo(markup JSON)
 RETURNS STRUCT<
   loading ARRAY<STRING>
 > LANGUAGE js AS '''
@@ -18,8 +18,6 @@ function getKey(dict){
 }
 
 try {
-    var markup = JSON.parse(markup_string);
-
     if (Array.isArray(markup) || typeof markup != 'object') return result;
 
     if (markup.images && markup.images.img && markup.images.img.loading) {
@@ -35,11 +33,11 @@ WITH image_loading AS (
     root_page,
     is_root_page,
     page,
-    getLoadingPropertyMarkupInfo(JSON_EXTRACT_SCALAR(payload, '$._markup')) AS loading_property_markup_info
+    getLoadingPropertyMarkupInfo(custom_metrics.markup) AS loading_property_markup_info
   FROM
     `httparchive.crawl.pages`
   WHERE
-    date = '2025-06-01'
+    date = '2025-07-01'
 )
 
 SELECT

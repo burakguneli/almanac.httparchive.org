@@ -3,7 +3,7 @@
 
 
 # returns all the data we need from _markup
-CREATE TEMPORARY FUNCTION getMarkupStatsInfo(markup_string STRING)
+CREATE TEMPORARY FUNCTION getMarkupStatsInfo(markup JSON)
 RETURNS STRUCT<
   images_img_total INT64,
   images_alt_missing_total INT64,
@@ -24,8 +24,6 @@ var result = {
   has_html_amp_emoji_attribute: false
 };
 try {
-    var markup = JSON.parse(markup_string);
-
     if (Array.isArray(markup) || typeof markup != 'object') return result;
 
     if (markup.images) {
@@ -62,10 +60,11 @@ WITH markup_extraction AS (
     END
       AS is_root_page,
     page,
-    getMarkupStatsInfo(JSON_EXTRACT_SCALAR(payload, '$._markup')) AS markup_info
+    getMarkupStatsInfo(custom_metrics.markup) AS markup_info
   FROM
     `httparchive.crawl.pages`
-  WHERE date = '2025-06-01'
+  WHERE
+    date = '2025-07-01'
 )
 
 SELECT

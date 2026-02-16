@@ -3,7 +3,7 @@
 
 
 # returns all the data we need from _almanac
-CREATE TEMPORARY FUNCTION getVideosAlmanacInfo(almanac_string STRING)
+CREATE TEMPORARY FUNCTION getVideosAlmanacInfo(videos JSON)
 RETURNS STRUCT<
   videos_total INT64
 > LANGUAGE js AS '''
@@ -11,12 +11,10 @@ var result = {
   videos_total: 0
 };
 try {
-    var almanac = JSON.parse(almanac_string);
+    if (Array.isArray(videos) || typeof videos != 'object') return result;
 
-    if (Array.isArray(almanac) || typeof almanac != 'object') return result;
-
-    if (almanac.videos && almanac.videos.total) {
-      result.videos_total = almanac.videos.total;
+    if (videos && videos.total) {
+      result.videos_total = videos.total;
     }
 } catch (e) {}
 return result;
@@ -34,11 +32,11 @@ FROM
   (
     SELECT
       client AS client,
-      getVideosAlmanacInfo(JSON_EXTRACT_SCALAR(payload, '$._almanac')) AS videos_almanac_info
+      getVideosAlmanacInfo(TO_JSON(custom_metrics.other.almanac.videos)) AS videos_almanac_info
     FROM
       `httparchive.crawl.pages`
     WHERE
-      date = '2025-06-01'
+      date = '2025-07-01'
   )
 GROUP BY
   client

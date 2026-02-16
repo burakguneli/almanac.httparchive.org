@@ -4,8 +4,8 @@
 # Note: Contains redundant stats to seo-stats.sql in order to start better segmenting metrics away from monolithic queries.
 
 
-# JS parsing of payload
-CREATE TEMPORARY FUNCTION getCanonicalMetrics(payload STRING)
+# JS parsing of custom_metrics
+CREATE TEMPORARY FUNCTION getCanonicalMetrics(wpt_bodies JSON)
 RETURNS STRUCT<
   has_wpt_bodies BOOL,
   has_canonicals BOOL,
@@ -57,10 +57,6 @@ var result = {has_wpt_bodies: true,
 
 
 try {
-
-  var $ = JSON.parse(payload);
-  var wpt_bodies  = JSON.parse($._wpt_bodies);
-
   if (!wpt_bodies){
       result.has_wpt_bodies = false;
       return result;
@@ -161,11 +157,11 @@ SELECT
 FROM (
   SELECT
     client AS client,
-    getCanonicalMetrics(payload) AS canonical_metrics
+    getCanonicalMetrics(custom_metrics.wpt_bodies) AS canonical_metrics
   FROM
     `httparchive.crawl.pages`
   WHERE
-    date = '2025-06-01'
+    date = '2025-07-01'
 )
 WHERE
   canonical_metrics.has_wpt_bodies

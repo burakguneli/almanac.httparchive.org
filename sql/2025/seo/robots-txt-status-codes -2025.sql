@@ -2,14 +2,12 @@
 # Robots txt status codes
 
 # returns all the data we need from _robots_txt
-CREATE TEMPORARY FUNCTION getRobotsStatusInfo(robots_txt_string STRING)
+CREATE TEMPORARY FUNCTION getRobotsStatusInfo(robots_txt JSON)
 RETURNS STRUCT<
   status_code STRING
 > LANGUAGE js AS '''
 var result = {};
 try {
-    var robots_txt = JSON.parse(robots_txt_string);
-
     if (Array.isArray(robots_txt) || typeof robots_txt != 'object') return result;
 
     if (robots_txt.status) {
@@ -30,11 +28,11 @@ FROM
   (
     SELECT
       client,
-      getRobotsStatusInfo(JSON_EXTRACT_SCALAR(payload, '$._robots_txt')) AS robots_txt_status_info
+      getRobotsStatusInfo(custom_metrics.robots_txt) AS robots_txt_status_info
     FROM
       `httparchive.crawl.pages`
     WHERE
-      DATE = '2025-06-01'
+      DATE = '2025-07-01'
   )
 GROUP BY
   client,

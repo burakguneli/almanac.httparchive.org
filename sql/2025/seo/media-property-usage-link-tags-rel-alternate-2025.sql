@@ -2,17 +2,15 @@
 # Media property usage of link tags with rel=alternate
 
 # returns all the data we need from _almanac
-CREATE TEMPORARY FUNCTION getMediaPropertyAlmanacInfo(almanac_string STRING)
+CREATE TEMPORARY FUNCTION getMediaInfo(link_nodes JSON)
 RETURNS ARRAY<STRING>
 LANGUAGE js AS '''
 var result = [];
 try {
-    var almanac = JSON.parse(almanac_string);
+    if (Array.isArray(link_nodes) || typeof link_nodes != 'object') return ["NO PAYLOAD"];
 
-    if (Array.isArray(almanac) || typeof almanac != 'object') return ["NO PAYLOAD"];
-
-    if (almanac && almanac["link-nodes"] && almanac["link-nodes"].nodes && almanac["link-nodes"].nodes.filter) {
-      result = almanac["link-nodes"].nodes.filter(n => n.rel && n.rel.split(' ').find(r => r.trim().toLowerCase() == 'alternate') && n.media).map(am => am.media.toLowerCase().trim().replace("d(", "d (").replace(": ", ":"));
+    if (link_nodes && link_nodes.nodes && link_nodes.nodes.filter) {
+      result = link_nodes.nodes.filter(n => n.rel && n.rel.split(' ').find(r => r.trim().toLowerCase() == 'alternate') && n.media).map(am => am.media.toLowerCase().trim().replace("d(", "d (").replace(": ", ":"));
     }
 
     if (result.length === 0)
@@ -25,11 +23,11 @@ return result;
 WITH page_almanac_info AS (
   SELECT
     client,
-    getMediaPropertyAlmanacInfo(JSON_EXTRACT_SCALAR(payload, '$._almanac')) AS media_property_almanac_info
+    getMediaInfo(custom_metrics.other.almanac.`link-nodes`) AS media_property_almanac_info
   FROM
     `httparchive.crawl.pages`
   WHERE
-    DATE = '2025-06-01'
+    DATE = '2025-07-01'
 ),
 
 total_pages AS (

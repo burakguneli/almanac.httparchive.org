@@ -2,7 +2,7 @@
 # Structured data formats
 
 # returns all the data we need from _wpt_bodies
-CREATE TEMPORARY FUNCTION getStructuredDataWptBodies(wpt_bodies_string STRING)
+CREATE TEMPORARY FUNCTION getStructuredDataWptBodies(wpt_bodies JSON)
 RETURNS STRUCT<
   items_by_format ARRAY<STRING>
 > LANGUAGE js AS '''
@@ -23,8 +23,6 @@ function getKey(dict){
 }
 
 try {
-    var wpt_bodies = JSON.parse(wpt_bodies_string);
-
     if (Array.isArray(wpt_bodies) || typeof wpt_bodies != 'object') return result;
 
     if (wpt_bodies.structured_data && wpt_bodies.structured_data.rendered && wpt_bodies.structured_data.rendered.items_by_format) {
@@ -45,12 +43,12 @@ WITH structured_data AS (
       ELSE 'No Assigned Page'
     END AS is_root_page,
     page,
-    getStructuredDataWptBodies(JSON_EXTRACT_SCALAR(payload, '$._wpt_bodies')) AS structured_data_wpt_bodies_info,
+    getStructuredDataWptBodies(custom_metrics.wpt_bodies) AS structured_data_wpt_bodies_info,
     COUNT(DISTINCT root_page) OVER (PARTITION BY client) AS total_sites
   FROM
     `httparchive.crawl.pages`
   WHERE
-    date = '2025-06-01'
+    date = '2025-07-01'
 )
 
 SELECT

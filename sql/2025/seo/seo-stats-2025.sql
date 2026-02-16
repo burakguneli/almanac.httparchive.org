@@ -4,7 +4,7 @@
 # Note: Canonical metrics moved to pages-canonical-stats.sql.  Should be removed from here in 2022.
 
 # returns all the data we need from _wpt_bodies
-CREATE TEMPORARY FUNCTION getSeoStatsWptBodies(wpt_bodies_string STRING)
+CREATE TEMPORARY FUNCTION getSeoStatsWptBodies(wpt_bodies JSON)
 RETURNS STRUCT<
 
   # tags
@@ -88,8 +88,6 @@ RETURNS STRUCT<
 > LANGUAGE js AS '''
 var result = {};
 try {
-  var wpt_bodies = JSON.parse(wpt_bodies_string);
-
   if (Array.isArray(wpt_bodies) || typeof wpt_bodies != 'object') return result;
 
   // checks if two string arrays contain the same strings
@@ -484,11 +482,11 @@ FROM (
     END
       AS is_root_page,
     SPLIT(page, ':')[OFFSET(0)] AS protocol,
-    getSeoStatsWptBodies(JSON_EXTRACT_SCALAR(payload, '$._wpt_bodies')) AS wpt_bodies_info
+    getSeoStatsWptBodies(TO_JSON(custom_metrics.wpt_bodies)) AS wpt_bodies_info
   FROM
     `httparchive.crawl.pages`
   WHERE
-    date = '2025-06-01'
+    date = '2025-07-01'
 )
 GROUP BY
   client,

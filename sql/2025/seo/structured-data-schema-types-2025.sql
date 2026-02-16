@@ -2,14 +2,12 @@
 # Structured data schema types
 
 # returns all the data we need from _wpt_bodies
-CREATE TEMPORARY FUNCTION getStructuredSchemaWptBodies(wpt_bodies_string STRING)
+CREATE TEMPORARY FUNCTION getStructuredSchemaWptBodies(wpt_bodies JSON)
 RETURNS STRUCT<
   jsonld_and_microdata_types ARRAY<STRING>
 > LANGUAGE js AS '''
 var result = {};
 try {
-  var wpt_bodies = JSON.parse(wpt_bodies_string);
-
   if (Array.isArray(wpt_bodies) || typeof wpt_bodies != 'object') return result;
 
   if (wpt_bodies.structured_data && wpt_bodies.structured_data.rendered) {
@@ -29,12 +27,12 @@ WITH structured_data AS (
       WHEN is_root_page = TRUE THEN 'Homepage'
       ELSE 'No Assigned Page'
     END AS is_root_page,
-    getStructuredSchemaWptBodies(JSON_EXTRACT_SCALAR(payload, '$._wpt_bodies')) AS structured_schema_wpt_bodies_info,
+    getStructuredSchemaWptBodies(TO_JSON(custom_metrics.wpt_bodies)) AS structured_schema_wpt_bodies_info,
     COUNT(DISTINCT root_page) OVER (PARTITION BY client) AS total_sites
   FROM
     `httparchive.crawl.pages`
   WHERE
-    date = '2025-06-01'
+    date = '2025-07-01'
 )
 
 SELECT
